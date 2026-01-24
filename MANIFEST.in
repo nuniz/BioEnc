@@ -1,0 +1,7 @@
+include CMakeLists.txt
+include LICENSE.txt
+include README.md
+include CLAUDE.md
+recursive-include src *.hpp *.cpp
+recursive-include tests *.py
+global-exclude *.pyc __pycache__ .DS_Store

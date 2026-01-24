@@ -1,0 +1,104 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# C++ build artifacts
+*.o
+*.obj
+*.lo
+*.slo
+*.lib
+*.a
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# PyBind11 / setuptools build
+_skbuild/
+*.pyd
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# PEP 582
+__pypackages__/
+
+# Package managers
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Documentation
+docs/_build/
+site/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+._*
+
+# Env files
+.env
+
+# Claude Code
+.claude/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# CMake/Ninja extras
+compile_commands.json
+CMakeUserPresets.json
+build.ninja
+.ninja_log
+.ninja_deps
