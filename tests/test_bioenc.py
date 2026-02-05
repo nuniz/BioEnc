@@ -12,20 +12,20 @@ class TestTokenizeDna:
         """Test basic forward strand tokenization."""
         seq = np.frombuffer(b"ACGT", dtype=np.uint8)
         tokens = bioenc.tokenize_dna(seq, k=2, stride=1)  # Explicitly set stride=1 for overlapping
-        # A=0,C=1,G=2,T=3, base=5
-        # AC = 0*5 + 1 = 1
-        # CG = 1*5 + 2 = 7
-        # GT = 2*5 + 3 = 13
-        expected = np.array([1, 7, 13], dtype=np.int64)
+        # PAD=0, UNK/N=1, A=2, C=3, G=4, T=5, base=6
+        # AC = 2*6 + 3 = 15
+        # CG = 3*6 + 4 = 22
+        # GT = 4*6 + 5 = 29
+        expected = np.array([15, 22, 29], dtype=np.int64)
         np.testing.assert_array_equal(tokens, expected)
 
     def test_forward_k3(self):
         """Test k=3 tokenization with stride=1 (overlapping)."""
         seq = np.frombuffer(b"ACGT", dtype=np.uint8)
         tokens = bioenc.tokenize_dna(seq, k=3, stride=1)
-        # ACG = 0*25 + 1*5 + 2 = 7
-        # CGT = 1*25 + 2*5 + 3 = 38
-        expected = np.array([7, 38], dtype=np.int64)
+        # ACG = 2*36 + 3*6 + 4 = 94
+        # CGT = 3*36 + 4*6 + 5 = 137
+        expected = np.array([94, 137], dtype=np.int64)
         np.testing.assert_array_equal(tokens, expected)
 
     def test_stride3_default(self):
@@ -39,10 +39,10 @@ class TestTokenizeDna:
         """Test explicit stride=3 for non-overlapping codons."""
         seq = np.frombuffer(b"ATGCGTAAA", dtype=np.uint8)
         tokens = bioenc.tokenize_dna(seq, k=3, stride=3)
-        # ATG = 0*25 + 3*5 + 2 = 17
-        # CGT = 1*25 + 2*5 + 3 = 38
-        # AAA = 0*25 + 0*5 + 0 = 0
-        expected = np.array([17, 38, 0], dtype=np.int64)
+        # ATG = 2*36 + 5*6 + 4 = 106
+        # CGT = 3*36 + 4*6 + 5 = 137
+        # AAA = 2*36 + 2*6 + 2 = 86
+        expected = np.array([106, 137, 86], dtype=np.int64)
         np.testing.assert_array_equal(tokens, expected)
 
     def test_revcomp_strand(self):
@@ -50,20 +50,20 @@ class TestTokenizeDna:
         seq = np.frombuffer(b"ACGT", dtype=np.uint8)
         tokens = bioenc.tokenize_dna(seq, k=2, stride=1, strand="revcomp")
         # RC of AC is GT, RC of CG is CG, RC of GT is AC
-        # GT = 2*5 + 3 = 13
-        # CG = 1*5 + 2 = 7
-        # AC = 0*5 + 1 = 1
-        expected = np.array([13, 7, 1], dtype=np.int64)
+        # GT = 4*6 + 5 = 29
+        # CG = 3*6 + 4 = 22
+        # AC = 2*6 + 3 = 15
+        expected = np.array([29, 22, 15], dtype=np.int64)
         np.testing.assert_array_equal(tokens, expected)
 
     def test_canonical_strand(self):
         """Test canonical strand tokenization (min of fwd and revcomp)."""
         seq = np.frombuffer(b"ACGT", dtype=np.uint8)
         tokens = bioenc.tokenize_dna(seq, k=2, stride=1, strand="canonical")
-        # AC(1) vs GT(13) -> 1
-        # CG(7) vs CG(7) -> 7
-        # GT(13) vs AC(1) -> 1
-        expected = np.array([1, 7, 1], dtype=np.int64)
+        # AC(15) vs GT(29) -> 15
+        # CG(22) vs CG(22) -> 22
+        # GT(29) vs AC(15) -> 15
+        expected = np.array([15, 22, 15], dtype=np.int64)
         np.testing.assert_array_equal(tokens, expected)
 
     def test_stride(self):
@@ -71,24 +71,24 @@ class TestTokenizeDna:
         seq = np.frombuffer(b"ACGTACGT", dtype=np.uint8)
         tokens = bioenc.tokenize_dna(seq, k=2, stride=2)
         # Positions 0,2,4,6 -> AC, GT, AC, GT
-        expected = np.array([1, 13, 1, 13], dtype=np.int64)
+        expected = np.array([15, 29, 15, 29], dtype=np.int64)
         np.testing.assert_array_equal(tokens, expected)
 
     def test_lowercase(self):
         """Test that lowercase sequences work."""
         seq = np.frombuffer(b"acgt", dtype=np.uint8)
         tokens = bioenc.tokenize_dna(seq, k=2, stride=1)
-        expected = np.array([1, 7, 13], dtype=np.int64)
+        expected = np.array([15, 22, 29], dtype=np.int64)
         np.testing.assert_array_equal(tokens, expected)
 
     def test_unknown_char_maps_to_n(self):
-        """Test that unknown characters map to N."""
+        """Test that unknown characters map to UNK."""
         seq = np.frombuffer(b"AXGT", dtype=np.uint8)  # X is unknown
         tokens = bioenc.tokenize_dna(seq, k=2, stride=1)
-        # AX -> A=0, X->N=4, so 0*5+4 = 4
-        # XG -> N=4, G=2, so 4*5+2 = 22
-        # GT -> 2*5+3 = 13
-        expected = np.array([4, 22, 13], dtype=np.int64)
+        # AX -> A=2, X->UNK=1, so 2*6+1 = 13
+        # XG -> UNK=1, G=4, so 1*6+4 = 10
+        # GT -> 4*6+5 = 29
+        expected = np.array([13, 10, 29], dtype=np.int64)
         np.testing.assert_array_equal(tokens, expected)
 
     def test_empty_sequence(self):
@@ -385,28 +385,28 @@ class TestTokenizeAa:
         assert len(tokens) == 1
 
     def test_aa_vocabulary_size(self):
-        """Test that AA uses base=28 correctly."""
-        # A=0, C=1, base=28
-        # AC = 0*28 + 1 = 1
+        """Test that AA uses base=29 correctly."""
+        # A=2, C=3, base=29
+        # AC = 2*29 + 3 = 61
         seq = np.frombuffer(b"AC", dtype=np.uint8)
         tokens = bioenc.tokenize_aa(seq, k=2)
-        assert tokens[0] == 1
+        assert tokens[0] == 61
 
     def test_aa_gap_character(self):
-        """Test gap character (-) maps to 27."""
-        # Gap (-) = 27, base=28
-        # For k=2, max value with gaps: 27*28 + 27 = 783
+        """Test gap character (-) maps to 28."""
+        # Gap (-) = 28, base=29
+        # For k=2: 28*29 + 28 = 840
         seq = np.frombuffer(b"--", dtype=np.uint8)
         tokens = bioenc.tokenize_aa(seq, k=2)
-        assert tokens[0] == 27 * 28 + 27  # 783
+        assert tokens[0] == 28 * 29 + 28  # 840
 
     def test_aa_stop_codon(self):
-        """Test stop codon (*) maps to 26."""
-        # Stop (*) = 26, A = 0, base=28
-        # *A = 26*28 + 0 = 728
+        """Test stop codon (*) maps to 27."""
+        # Stop (*) = 27, A = 2, base=29
+        # *A = 27*29 + 2 = 785
         seq = np.frombuffer(b"*A", dtype=np.uint8)
         tokens = bioenc.tokenize_aa(seq, k=2)
-        assert tokens[0] == 26 * 28 + 0  # 728
+        assert tokens[0] == 27 * 29 + 2  # 785
 
     def test_aa_lowercase(self):
         """Test that lowercase amino acids work."""
@@ -417,13 +417,13 @@ class TestTokenizeAa:
         np.testing.assert_array_equal(tokens_upper, tokens_lower)
 
     def test_aa_unknown_maps_to_x(self):
-        """Test that unknown characters map to X=25."""
-        # Unknown characters should map to X=25
+        """Test that unknown characters map to UNK/X=1."""
+        # Unknown characters should map to UNK/X=1
         seq = np.frombuffer(b"A1", dtype=np.uint8)  # '1' is unknown
         tokens = bioenc.tokenize_aa(seq, k=2)
-        # A=0, 1->X=25
-        # A1 = 0*28 + 25 = 25
-        assert tokens[0] == 25
+        # A=2, 1->UNK=1
+        # A1 = 2*29 + 1 = 59
+        assert tokens[0] == 59
 
     def test_aa_empty_sequence(self):
         """Test tokenization of empty sequence."""
@@ -477,10 +477,10 @@ class TestBatchTokenizeDnaShared:
             enable_padding=True, max_len=4
         )
         assert tokens.shape == (2, 4)
-        # First seq: AC=1, CG=7, GT=13, pad=-1
-        # Second seq: AA=0, AA=0, AA=0, pad=-1
-        np.testing.assert_array_equal(tokens[0], [1, 7, 13, -1])
-        np.testing.assert_array_equal(tokens[1], [0, 0, 0, -1])
+        # First seq: AC=15, CG=22, GT=29, pad=0
+        # Second seq: AA=14, AA=14, AA=14, pad=0
+        np.testing.assert_array_equal(tokens[0], [15, 22, 29, 0])
+        np.testing.assert_array_equal(tokens[1], [14, 14, 14, 0])
 
     def test_variable_length_default(self):
         """Test that variable-length is now the default."""
@@ -491,7 +491,7 @@ class TestBatchTokenizeDnaShared:
         # Should get list of arrays
         assert isinstance(tokens, list)
         assert len(tokens) == 1
-        # Should get all 7 tokens: AC=1, CG=7, GT=13, TA=15, AC=1, CG=7, GT=13
+        # Should get all 7 tokens: AC=15, CG=22, GT=29, TA=32, AC=15, CG=22, GT=29
         assert len(tokens[0]) == 7
 
     def test_crop_explicit_start(self):
@@ -503,10 +503,10 @@ class TestBatchTokenizeDnaShared:
             buf, lens, crop_starts, crop_lengths,
             k=2, stride=1
         )
-        # Starting at position 2 (GTACGT): GT=13, TA=15, AC=1, CG=7, GT=13
-        # TA = 3*5 + 0 = 15
+        # Starting at position 2 (GTACGT): GT=29, TA=32, AC=15, CG=22, GT=29
+        # TA = 5*6 + 2 = 32
         assert isinstance(tokens, list)
-        np.testing.assert_array_equal(tokens[0], [13, 15, 1, 7, 13])
+        np.testing.assert_array_equal(tokens[0], [29, 32, 15, 22, 29])
 
     def test_crop_per_sequence(self):
         """Test different start positions per sequence using crop_and_tokenize."""
@@ -517,11 +517,11 @@ class TestBatchTokenizeDnaShared:
             buf, lens, crop_starts, crop_lengths,
             k=2, stride=1
         )
-        # First seq (ACGTAC): AC=1, CG=7, GT=13, TA=15, AC=1
-        np.testing.assert_array_equal(tokens[0], [1, 7, 13, 15, 1])
-        # Second seq starting at 2 (TTAAAA): TT=18, TA=15, AA=0, AA=0, AA=0
-        # TA = 3*5 + 0 = 15
-        np.testing.assert_array_equal(tokens[1], [18, 15, 0, 0, 0])
+        # First seq (ACGTAC): AC=15, CG=22, GT=29, TA=32, AC=15
+        np.testing.assert_array_equal(tokens[0], [15, 22, 29, 32, 15])
+        # Second seq starting at 2 (TTAAAA): TT=35, TA=32, AA=14, AA=14, AA=14
+        # TA = 5*6 + 2 = 32
+        np.testing.assert_array_equal(tokens[1], [35, 32, 14, 14, 14])
 
     def test_padding(self):
         """Test that short sequences are padded."""
@@ -530,7 +530,7 @@ class TestBatchTokenizeDnaShared:
             buf, lens, k=2, stride=1,
             enable_padding=True, max_len=5, pad_value=-99
         )
-        assert tokens[0, 0] == 1  # AC
+        assert tokens[0, 0] == 15  # AC = 2*6 + 3 = 15
         assert all(tokens[0, 1:] == -99)  # Rest padded
 
     def test_canonical_strand(self):
@@ -540,10 +540,10 @@ class TestBatchTokenizeDnaShared:
             buf, lens, k=2, stride=1,
             enable_padding=True, max_len=4, strand="canonical"
         )
-        # AC(1) vs GT(13) -> 1
-        # CG(7) vs CG(7) -> 7
-        # GT(13) vs AC(1) -> 1
-        np.testing.assert_array_equal(tokens[0, :3], [1, 7, 1])
+        # AC(15) vs GT(29) -> 15
+        # CG(22) vs CG(22) -> 22
+        # GT(29) vs AC(15) -> 15
+        np.testing.assert_array_equal(tokens[0, :3], [15, 22, 15])
 
 
 class TestBatchTokenizeDnaBoth:
@@ -583,10 +583,10 @@ class TestBatchTokenizeDnaBoth:
             buf, lens, k=2, stride=1,
             enable_padding=True, max_len=4
         )
-        # Forward: AC=1, CG=7, GT=13
-        np.testing.assert_array_equal(fwd[0, :3], [1, 7, 13])
-        # Revcomp: GT=13, CG=7, AC=1
-        np.testing.assert_array_equal(rev[0, :3], [13, 7, 1])
+        # Forward: AC=15, CG=22, GT=29
+        np.testing.assert_array_equal(fwd[0, :3], [15, 22, 29])
+        # Revcomp: GT=29, CG=22, AC=15
+        np.testing.assert_array_equal(rev[0, :3], [29, 22, 15])
 
 
 class TestBatchTokenizeAaShared:
@@ -614,23 +614,23 @@ class TestBatchTokenizeAaShared:
             buf, lens, k=2, stride=1,
             enable_padding=True, max_len=4
         )
-        # A=0, C=1, D=2, E=3, base=28
-        # AC = 0*28 + 1 = 1
-        # CD = 1*28 + 2 = 30
-        # DE = 2*28 + 3 = 59
-        np.testing.assert_array_equal(tokens[0, :3], [1, 30, 59])
+        # A=2, C=3, D=4, E=5, base=29
+        # AC = 2*29 + 3 = 61
+        # CD = 3*29 + 4 = 91
+        # DE = 4*29 + 5 = 121
+        np.testing.assert_array_equal(tokens[0, :3], [61, 91, 121])
 
     def test_aa_unknown_maps_to_x(self):
-        """Test that unknown AA characters map to X=25."""
+        """Test that unknown AA characters map to UNK/X=1."""
         buf, lens = self._make_batch([b"A1A"])  # '1' is unknown
         tokens = bioenc.batch_tokenize_aa_shared(
             buf, lens, k=2, stride=1,
             enable_padding=True, max_len=4
         )
-        # A=0, 1->X=25
-        # A1 = 0*28 + 25 = 25
-        # 1A = 25*28 + 0 = 700
-        np.testing.assert_array_equal(tokens[0, :2], [25, 700])
+        # A=2, 1->UNK=1
+        # A1 = 2*29 + 1 = 59
+        # 1A = 1*29 + 2 = 31
+        np.testing.assert_array_equal(tokens[0, :2], [59, 31])
 
     def test_aa_crop(self):
         """Test crop_and_tokenize for AA."""
@@ -644,8 +644,8 @@ class TestBatchTokenizeAaShared:
         assert isinstance(tokens, list)
         assert len(tokens) == 1
         # Starting at position 2 (DEFGHI): DE, EF, FG, GH, HI
-        # D=2, E=3 -> DE = 2*28 + 3 = 59
-        assert tokens[0][0] == 59
+        # D=4, E=5 -> DE = 4*29 + 5 = 121
+        assert tokens[0][0] == 121
         assert len(tokens[0]) == 5  # 6 - 2 + 1 = 5
 
 
@@ -654,15 +654,16 @@ class TestHashTokens:
 
     def test_basic_hash(self):
         """Test basic token hashing."""
-        tokens = np.array([0, 100, 1000], dtype=np.int64)
+        tokens = np.array([1, 100, 1000], dtype=np.int64)
         hashed = bioenc.hash_tokens(tokens, num_buckets=50)
         assert hashed.shape == tokens.shape
         assert all(0 <= h < 50 for h in hashed)
 
     def test_hash_preserves_padding(self):
-        """Test that negative values (padding) are preserved."""
+        """Test that zero and negative values (padding) are preserved."""
         tokens = np.array([0, 100, -1, -99], dtype=np.int64)
         hashed = bioenc.hash_tokens(tokens, num_buckets=50)
+        assert hashed[0] == 0   # 0 (padding) preserved
         assert hashed[2] == -1
         assert hashed[3] == -99
 
@@ -671,7 +672,8 @@ class TestHashTokens:
         tokens = np.array([[0, 1, 2], [10, 20, -1]], dtype=np.int64)
         hashed = bioenc.hash_tokens(tokens, num_buckets=5)
         assert hashed.shape == tokens.shape
-        assert hashed[1, 2] == -1  # Padding preserved
+        assert hashed[0, 0] == 0  # Padding preserved
+        assert hashed[1, 2] == -1  # Negative preserved
 
     def test_hash_deterministic(self):
         """Test that hashing is deterministic."""
@@ -733,8 +735,8 @@ class TestVariableLengthOutput:
         assert tokens.ndim == 2
         assert tokens.shape == (2, 10)  # Max is 10 tokens from second seq
 
-        # First sequence should be padded
-        assert np.all(tokens[0, 6:] == -1)  # Last 4 positions padded
+        # First sequence should be padded with 0
+        assert np.all(tokens[0, 6:] == 0)  # Last 4 positions padded
 
     def test_pad_to_max_explicit(self):
         """Test rectangular output with explicit pad_to_max."""
@@ -748,8 +750,8 @@ class TestVariableLengthOutput:
         )
 
         assert tokens.shape == (1, 20)
-        assert np.sum(tokens[0] >= 0) == 6  # Only 6 valid tokens
-        assert np.sum(tokens[0] == -1) == 14  # 14 padding tokens
+        assert np.sum(tokens[0] > 0) == 6  # Only 6 valid tokens (all > 0)
+        assert np.sum(tokens[0] == 0) == 14  # 14 padding tokens
 
     def test_variable_length_aa(self):
         """Test variable-length output for amino acids."""
@@ -942,8 +944,8 @@ class TestEdgeCases:
         """Test IUPAC alphabet handling."""
         seq = np.frombuffer(b"ACGTRYWSKMBDHVN", dtype=np.uint8)
         tokens = bioenc.tokenize_dna(seq, k=2, alphabet="iupac")
-        # Should not crash, tokens should be in range [0, 15^2)
-        assert all(0 <= t < 225 for t in tokens)
+        # Should not crash, tokens should be in range (0, 16^2)
+        assert all(0 < t < 256 for t in tokens)
 
     def test_batch_strand_both_error(self):
         """Test that batch_tokenize_dna_shared raises error for strand='both'."""

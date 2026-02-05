@@ -45,8 +45,12 @@ This is a C++17 library with Python bindings via pybind11. It tokenizes biologic
 2. **GIL release + OpenMP**: Batch functions release Python's GIL then parallelize across sequences with OpenMP
 3. **Alphabet encoding**: Characters map to integer codes via 256-element lookup tables, then k-mers become base-N integers
 
+### Encoding Convention
+
+All alphabets follow ML-standard encoding: **PAD=0, UNK=1**, characters start at 2.
+
 ### Vocabulary Sizes
 
-- DNA ACGTN: `5^k` (e.g., 15,625 for k=6)
-- DNA IUPAC: `15^k`
-- Amino acids: `28^k`
+- DNA ACGTN: `6^k` (e.g., 46,656 for k=6)
+- DNA IUPAC: `16^k`
+- Amino acids: `29^k`

@@ -237,7 +237,7 @@ py::array_t<int64_t> tokenize_dna(
 
     const auto& table = use_iupac ? DNA_IUPAC : DNA_ACGTN;
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
-    uint64_t base = use_iupac ? 15 : 5;
+    uint64_t base = use_iupac ? 16 : 6;
     PowerCache<32> power_cache(base);
 
     size_t out_idx = 0;
@@ -298,7 +298,7 @@ py::list tokenize_dna_all_frames(
     bool use_iupac = (alphabet == "iupac");
     const auto& table = use_iupac ? DNA_IUPAC : DNA_ACGTN;
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
-    uint64_t base = use_iupac ? 15 : 5;
+    uint64_t base = use_iupac ? 16 : 6;
 
     py::list result;
 
@@ -391,7 +391,7 @@ py::object batch_tokenize_dna_all_frames(
     const std::string& alphabet = "acgtn",
     bool enable_padding = false,
     std::optional<size_t> max_len = std::nullopt,
-    int64_t pad_value = -1)
+    int64_t pad_value = 0)
 {
     // Validate parameters
     validation::validate_k(k, "batch_tokenize_dna_all_frames");
@@ -417,7 +417,7 @@ py::object batch_tokenize_dna_all_frames(
     bool use_iupac = (alphabet == "iupac");
     const auto& table = use_iupac ? DNA_IUPAC : DNA_ACGTN;
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
-    uint64_t base = use_iupac ? 15 : 5;
+    uint64_t base = use_iupac ? 16 : 6;
 
     if (!enable_padding) {
         // Variable-length output: List[List[ndarray]] - outer: sequences, inner: 6 frames
@@ -669,7 +669,7 @@ py::array_t<int64_t> tokenize_aa(
     py::array_t<int64_t> result(num_tokens);
     int64_t* out = result.mutable_data();
 
-    constexpr uint64_t base = 28;
+    constexpr uint64_t base = 29;
     size_t out_idx = 0;
     for (size_t i = 0; i + k <= len && out_idx < num_tokens; i += stride) {
         uint64_t value = 0;
@@ -908,7 +908,7 @@ py::object batch_tokenize_aa_shared(
     int stride = 1,
     bool enable_padding = false,
     std::optional<size_t> max_len = std::nullopt,
-    int64_t pad_value = -1)
+    int64_t pad_value = 0)
 {
     // Validate parameters
     validation::validate_k(k, "batch_tokenize_aa_shared");
@@ -1013,7 +1013,7 @@ py::object crop_and_tokenize_aa(
     int stride = 1,
     bool enable_padding = false,
     std::optional<size_t> max_len = std::nullopt,
-    int64_t pad_value = -1)
+    int64_t pad_value = 0)
 {
     // Validate parameters
     validation::validate_k(k, "crop_and_tokenize_aa");
@@ -1195,7 +1195,7 @@ PYBIND11_MODULE(_bioenc, m) {
           py::arg("alphabet") = "acgtn",
           py::arg("enable_padding") = false,
           py::arg("max_len") = py::none(),
-          py::arg("pad_value") = -1,
+          py::arg("pad_value") = 0,
           R"doc(
           Batch tokenize all 6 reading frames for multiple sequences.
 
@@ -1223,7 +1223,7 @@ PYBIND11_MODULE(_bioenc, m) {
               If enable_padding=True and this is set, pad to this length.
               If None, pad to actual maximum token count across all frames.
           pad_value : int, optional
-              Padding value for short sequences (default: -1)
+              Padding value for short sequences (default: 0)
 
           Returns
           -------
@@ -1285,7 +1285,7 @@ PYBIND11_MODULE(_bioenc, m) {
           py::arg("reading_frame") = py::none(),
           py::arg("enable_padding") = false,
           py::arg("max_len") = py::none(),
-          py::arg("pad_value") = -1,
+          py::arg("pad_value") = 0,
           py::arg("alphabet") = "acgtn",
           py::arg("strand") = "forward",
           R"doc(
@@ -1316,7 +1316,7 @@ PYBIND11_MODULE(_bioenc, m) {
               If enable_padding=True and this is set, pad to this length.
               If None, pad to actual maximum token count.
           pad_value : int, optional
-              Padding value for short sequences (default: -1)
+              Padding value for short sequences (default: 0)
           alphabet : str, optional
               'acgtn' or 'iupac' (default: 'acgtn')
           strand : str, optional
@@ -1336,7 +1336,7 @@ PYBIND11_MODULE(_bioenc, m) {
           py::arg("stride") = 3,
           py::arg("enable_padding") = false,
           py::arg("max_len") = py::none(),
-          py::arg("pad_value") = -1,
+          py::arg("pad_value") = 0,
           py::arg("alphabet") = "acgtn",
           R"doc(
           Batch tokenize DNA sequences returning both forward and reverse complement.
@@ -1363,7 +1363,7 @@ PYBIND11_MODULE(_bioenc, m) {
               If enable_padding=True and this is set, pad to this length.
               If None, pad to actual maximum token count.
           pad_value : int, optional
-              Padding value for short sequences (default: -1)
+              Padding value for short sequences (default: 0)
           alphabet : str, optional
               'acgtn' or 'iupac' (default: 'acgtn')
 
@@ -1381,7 +1381,7 @@ PYBIND11_MODULE(_bioenc, m) {
           py::arg("stride") = 1,
           py::arg("enable_padding") = false,
           py::arg("max_len") = py::none(),
-          py::arg("pad_value") = -1,
+          py::arg("pad_value") = 0,
           R"doc(
           Batch tokenize amino acid sequences from a shared buffer.
 
@@ -1407,7 +1407,7 @@ PYBIND11_MODULE(_bioenc, m) {
               If enable_padding=True and this is set, pad to this length.
               If None, pad to actual maximum token count.
           pad_value : int, optional
-              Padding value for short sequences (default: -1)
+              Padding value for short sequences (default: 0)
 
           Returns
           -------
@@ -1426,7 +1426,7 @@ PYBIND11_MODULE(_bioenc, m) {
           py::arg("reading_frame") = py::none(),
           py::arg("enable_padding") = false,
           py::arg("max_len") = py::none(),
-          py::arg("pad_value") = -1,
+          py::arg("pad_value") = 0,
           py::arg("alphabet") = "acgtn",
           py::arg("strand") = "forward",
           R"doc(
@@ -1456,7 +1456,7 @@ PYBIND11_MODULE(_bioenc, m) {
           max_len : int, optional
               Max length if padding enabled
           pad_value : int, optional
-              Padding value (default: -1)
+              Padding value (default: 0)
           alphabet : str, optional
               'acgtn' or 'iupac' (default: 'acgtn')
           strand : str, optional
@@ -1477,7 +1477,7 @@ PYBIND11_MODULE(_bioenc, m) {
           py::arg("stride") = 1,
           py::arg("enable_padding") = false,
           py::arg("max_len") = py::none(),
-          py::arg("pad_value") = -1,
+          py::arg("pad_value") = 0,
           R"doc(
           Crop amino acid sequences to windows, then tokenize.
 
@@ -1502,7 +1502,7 @@ PYBIND11_MODULE(_bioenc, m) {
           max_len : int, optional
               Max length if padding enabled
           pad_value : int, optional
-              Padding value (default: -1)
+              Padding value (default: 0)
 
           Returns
           -------
@@ -1517,7 +1517,7 @@ PYBIND11_MODULE(_bioenc, m) {
           Hash token indices to a fixed number of buckets.
 
           Useful for large k values where vocabulary size exceeds embedding table limits.
-          Preserves negative values (padding) unchanged.
+          Preserves zero (padding) and negative values unchanged.
 
           Uses OpenMP for parallel processing. Releases the Python GIL during
           computation to allow true parallelism.

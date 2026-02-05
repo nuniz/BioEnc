@@ -17,79 +17,82 @@ namespace bioenc {
 // Alphabet tables
 // ============================================================================
 
-// ACGTN alphabet (base=5): A=0, C=1, G=2, T=3, N=4
+// ACGTN alphabet (base=6): PAD=0, UNK/N=1, A=2, C=3, G=4, T=5
 constexpr uint8_t DNA_ACGTN[256] = {
-    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, // 0-15
-    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, // 16-31
-    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, // 32-47
-    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, // 48-63
-    4,0,4,1,4,4,4,2,4,4,4,4,4,4,4,4, // 64-79  (A=65, C=67, G=71)
-    4,4,4,4,3,3,4,4,4,4,4,4,4,4,4,4, // 80-95  (T=84, U=85)
-    4,0,4,1,4,4,4,2,4,4,4,4,4,4,4,4, // 96-111 (a=97, c=99, g=103)
-    4,4,4,4,3,3,4,4,4,4,4,4,4,4,4,4, // 112-127 (t=116, u=117)
-    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
-    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
-    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
-    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0-15
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 16-31
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 32-47
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 48-63
+    1,2,1,3,1,1,1,4,1,1,1,1,1,1,1,1, // 64-79  (A=65, C=67, G=71)
+    1,1,1,1,5,5,1,1,1,1,1,1,1,1,1,1, // 80-95  (T=84, U=85)
+    1,2,1,3,1,1,1,4,1,1,1,1,1,1,1,1, // 96-111 (a=97, c=99, g=103)
+    1,1,1,1,5,5,1,1,1,1,1,1,1,1,1,1, // 112-127 (t=116, u=117)
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
-// IUPAC alphabet (base=15)
-// A=0,C=1,G=2,T=3,U=3,R=4,Y=5,S=6,W=7,K=8,M=9,B=10,D=11,H=12,V=13,N=14
+// IUPAC alphabet (base=16): PAD=0, UNK/N=1, A=2, C=3, G=4, T=5, U=5
+// R=6, Y=7, S=8, W=9, K=10, M=11, B=12, D=13, H=14, V=15
 constexpr uint8_t DNA_IUPAC[256] = {
-    14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
-    14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
-    14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
-    14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
-    14, 0,10, 1,11,14,14, 2,12,14,14, 8,14, 9,14,14, // @ABCDEFGHIJKLMNO
-    14,14, 4, 6, 3, 3,13, 7,14, 5,14,14,14,14,14,14, // PQRSTUVWXYZ
-    14, 0,10, 1,11,14,14, 2,12,14,14, 8,14, 9,14,14, // `abcdefghijklmno
-    14,14, 4, 6, 3, 3,13, 7,14, 5,14,14,14,14,14,14, // pqrstuvwxyz
-    14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
-    14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
-    14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
-    14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1, 2,12, 3,13,1,1, 4,14,1,1,10,1,11, 1,1, // @ABCDEFGHIJKLMNO
+    1,1, 6, 8, 5, 5,15, 9,1, 7,1,1,1,1,1,1, // PQRSTUVWXYZ
+    1, 2,12, 3,13,1,1, 4,14,1,1,10,1,11, 1,1, // `abcdefghijklmno
+    1,1, 6, 8, 5, 5,15, 9,1, 7,1,1,1,1,1,1, // pqrstuvwxyz
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
 // Complement tables for reverse complement
-// ACGTN: A<->T (0<->3), C<->G (1<->2), N->N (4->4)
-constexpr uint8_t COMP_ACGTN[5] = {3, 2, 1, 0, 4};
+// ACGTN: PAD->PAD (0->0), UNK->UNK (1->1), A<->T (2<->5), C<->G (3<->4)
+constexpr uint8_t COMP_ACGTN[6] = {0, 1, 5, 4, 3, 2};
 
-// IUPAC complements (simplified)
-constexpr uint8_t COMP_IUPAC[15] = {
-    3,  // A -> T
-    2,  // C -> G
-    1,  // G -> C
-    0,  // T -> A
-    5,  // R(AG) -> Y(TC)
-    4,  // Y(TC) -> R(AG)
-    6,  // S(GC) -> S(GC)
-    7,  // W(AT) -> W(AT)
-    9,  // K(GT) -> M(AC)
-    8,  // M(AC) -> K(GT)
-    13, // B(CGT) -> V(ACG)
-    12, // D(AGT) -> H(ACT)
-    11, // H(ACT) -> D(AGT)
-    10, // V(ACG) -> B(CGT)
-    14  // N -> N
+// IUPAC complements
+// PAD->PAD(0), UNK->UNK(1), A<->T(2<->5), C<->G(3<->4),
+// R<->Y(6<->7), S<->S(8), W<->W(9), K<->M(10<->11),
+// B<->V(12<->15), D<->H(13<->14)
+constexpr uint8_t COMP_IUPAC[16] = {
+    0,  // PAD -> PAD
+    1,  // UNK -> UNK
+    5,  // A -> T
+    4,  // C -> G
+    3,  // G -> C
+    2,  // T -> A
+    7,  // R(AG) -> Y(TC)
+    6,  // Y(TC) -> R(AG)
+    8,  // S(GC) -> S(GC)
+    9,  // W(AT) -> W(AT)
+    11, // K(GT) -> M(AC)
+    10, // M(AC) -> K(GT)
+    15, // B(CGT) -> V(ACG)
+    14, // D(AGT) -> H(ACT)
+    13, // H(ACT) -> D(AGT)
+    12  // V(ACG) -> B(CGT)
 };
 
-// Amino acid alphabet (base=28)
-// Standard 20 + B,Z,J,U,O,X + start(*) + gap(-)
-// A=0,C=1,D=2,E=3,F=4,G=5,H=6,I=7,K=8,L=9,M=10,N=11,P=12,Q=13,R=14,S=15,T=16,V=17,W=18,Y=19
-// B=20,Z=21,J=22,U=23,O=24,X=25,*=26,-=27
+// Amino acid alphabet (base=29): PAD=0, UNK/X=1
+// A=2,C=3,D=4,E=5,F=6,G=7,H=8,I=9,K=10,L=11,M=12,N=13,P=14,Q=15,R=16,S=17,T=18,V=19,W=20,Y=21
+// B=22,Z=23,J=24,U=25,O=26,*=27,-=28
 constexpr uint8_t AA_TABLE[256] = {
-    25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,
-    25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,
-    25,25,25,25,25,25,25,25,25,25,26,25,25,27,25,25, // * at 42, - at 45
-    25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,
-    25, 0,20, 1, 2, 3, 4, 5, 6, 7,22, 8, 9,10,11,24, // @ABCDEFGHIJKLMNO
-    12,13,14,15,16,23,17,18,25,19,21,25,25,25,25,25, // PQRSTUVWXYZ
-    25, 0,20, 1, 2, 3, 4, 5, 6, 7,22, 8, 9,10,11,24, // `abcdefghijklmno
-    12,13,14,15,16,23,17,18,25,19,21,25,25,25,25,25, // pqrstuvwxyz
-    25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,
-    25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,
-    25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,
-    25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,27,1,1,28,1,1, // * at 42, - at 45
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1, 2,22, 3, 4, 5, 6, 7, 8, 9,24,10,11,12,13,26, // @ABCDEFGHIJKLMNO
+    14,15,16,17,18,25,19,20, 1,21,23,1,1,1,1,1, // PQRSTUVWXYZ
+    1, 2,22, 3, 4, 5, 6, 7, 8, 9,24,10,11,12,13,26, // `abcdefghijklmno
+    14,15,16,17,18,25,19,20, 1,21,23,1,1,1,1,1, // pqrstuvwxyz
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
 // ============================================================================
@@ -121,7 +124,7 @@ inline uint64_t hash_mix(uint64_t key) {
 }
 
 inline int64_t hash_kmer(int64_t value, int64_t num_buckets) {
-    if (value < 0) return value; // preserve padding
+    if (value <= 0) return value; // preserve padding (0) and negative values
     return static_cast<int64_t>(hash_mix(static_cast<uint64_t>(value)) % static_cast<uint64_t>(num_buckets));
 }
 
@@ -218,8 +221,8 @@ private:
 // reducing complexity from O(nk^2 log k) to O(nk) for n sequences of length k.
 //
 // Example: For k=8, ACGTACGT encodes to both:
-//   - Forward: A*5^7 + C*5^6 + G*5^5 + ... (left-to-right)
-//   - Reverse: T*5^0 + G*5^1 + C*5^2 + ... (complement, right-to-left)
+//   - Forward: A*6^7 + C*6^6 + G*6^5 + ... (left-to-right)
+//   - Reverse: T*6^0 + G*6^1 + C*6^2 + ... (complement, right-to-left)
 // The canonical k-mer is min(forward, reverse), ensuring strand-invariant tokens.
 template<typename Table, typename CompTable>
 class RollingDnaCanon {
@@ -286,7 +289,7 @@ inline void tokenize_dna_seq(const uint8_t* seq, size_t len,
                              bool use_iupac, StrandMode strand) {
     const auto& table = use_iupac ? DNA_IUPAC : DNA_ACGTN;
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
-    uint64_t base = use_iupac ? 15 : 5;
+    uint64_t base = use_iupac ? 16 : 6;
 
     if (len < static_cast<size_t>(k)) {
         return;
@@ -341,9 +344,11 @@ inline void tokenize_dna_seq(const uint8_t* seq, size_t len,
 
 inline void reverse_complement(const uint8_t* seq, size_t len,
                                uint8_t* out, bool use_iupac) {
-    // Output characters for codes
-    static const char BASES_ACGTN[] = "ACGTN";
-    static const char BASES_IUPAC[] = "ACGTURYSWKMBDHVN";
+    // Output characters for codes (indexed by code value)
+    // Code: 0=PAD, 1=UNK/N, 2=A, 3=C, 4=G, 5=T
+    static const char BASES_ACGTN[] = "\0NACGT";
+    // Code: 0=PAD, 1=UNK/N, 2=A, 3=C, 4=G, 5=T, 6=R, 7=Y, 8=S, 9=W, 10=K, 11=M, 12=B, 13=D, 14=H, 15=V
+    static const char BASES_IUPAC[] = "\0NACGTRYSWKMBDHV";
 
     const auto& table = use_iupac ? DNA_IUPAC : DNA_ACGTN;
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
@@ -375,7 +380,7 @@ inline void batch_tokenize_dna(
 {
     const auto& table = use_iupac ? DNA_IUPAC : DNA_ACGTN;
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
-    uint64_t base = use_iupac ? 15 : 5;
+    uint64_t base = use_iupac ? 16 : 6;
     PowerCache<32> power_cache(base);
 
     #pragma omp parallel for schedule(guided)
@@ -467,7 +472,7 @@ inline void batch_tokenize_dna_both_strands(
 {
     const auto& table = use_iupac ? DNA_IUPAC : DNA_ACGTN;
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
-    uint64_t base = use_iupac ? 15 : 5;
+    uint64_t base = use_iupac ? 16 : 6;
     PowerCache<32> power_cache(base);
 
     #pragma omp parallel for schedule(guided)
@@ -540,7 +545,7 @@ inline void batch_tokenize_aa(
     int k, int stride,
     const int64_t* start_indices)  // nullable, defaults to 0
 {
-    constexpr uint64_t base = 28;
+    constexpr uint64_t base = 29;
 
     #pragma omp parallel for schedule(guided)
     for (size_t seq_idx = 0; seq_idx < num_seqs; seq_idx++) {
@@ -581,7 +586,7 @@ inline std::vector<std::vector<int64_t>> batch_tokenize_dna_variable(
 {
     const auto& table = use_iupac ? DNA_IUPAC : DNA_ACGTN;
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
-    uint64_t base = use_iupac ? 15 : 5;
+    uint64_t base = use_iupac ? 16 : 6;
     PowerCache<32> power_cache(base);
 
     std::vector<std::vector<int64_t>> results(num_seqs);
@@ -669,7 +674,7 @@ batch_tokenize_dna_both_variable(
 {
     const auto& table = use_iupac ? DNA_IUPAC : DNA_ACGTN;
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
-    uint64_t base = use_iupac ? 15 : 5;
+    uint64_t base = use_iupac ? 16 : 6;
     PowerCache<32> power_cache(base);
 
     std::vector<std::vector<int64_t>> results_fwd(num_seqs);
@@ -732,7 +737,7 @@ inline std::vector<std::vector<int64_t>> batch_tokenize_aa_variable(
     size_t num_seqs,
     int k, int stride)
 {
-    constexpr uint64_t base = 28;
+    constexpr uint64_t base = 29;
 
     std::vector<std::vector<int64_t>> results(num_seqs);
 
