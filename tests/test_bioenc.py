@@ -958,5 +958,127 @@ class TestEdgeCases:
             )
 
 
+class TestVocab:
+    """Tests for vocab_size and get_vocab."""
+
+    def test_vocab_size_acgtn(self):
+        """Test vocab_size for ACGTN alphabet."""
+        assert bioenc.vocab_size(1, 'acgtn') == 6
+        assert bioenc.vocab_size(2, 'acgtn') == 36
+        assert bioenc.vocab_size(3, 'acgtn') == 216
+        assert bioenc.vocab_size(6, 'acgtn') == 46656
+
+    def test_vocab_size_iupac(self):
+        """Test vocab_size for IUPAC alphabet."""
+        assert bioenc.vocab_size(1, 'iupac') == 16
+        assert bioenc.vocab_size(2, 'iupac') == 256
+
+    def test_vocab_size_aa(self):
+        """Test vocab_size for amino acid alphabet."""
+        assert bioenc.vocab_size(1, 'aa') == 29
+        assert bioenc.vocab_size(2, 'aa') == 841
+        assert bioenc.vocab_size(3, 'aa') == 24389
+
+    def test_vocab_size_invalid_alphabet(self):
+        """Test vocab_size raises on invalid alphabet."""
+        with pytest.raises(ValueError, match="Unknown alphabet"):
+            bioenc.vocab_size(3, 'invalid')
+
+    def test_get_vocab_pad_entry(self):
+        """Test that get_vocab includes <PAD> at index 0."""
+        v = bioenc.get_vocab(2, 'acgtn')
+        assert '<PAD>' in v
+        assert v['<PAD>'] == 0
+
+    def test_get_vocab_no_unk_by_default(self):
+        """Test that <UNK> is not included by default."""
+        v = bioenc.get_vocab(3, 'acgtn')
+        assert '<UNK>' not in v
+
+    def test_get_vocab_unk_entry_dna(self):
+        """Test <UNK> matches the all-N k-mer for DNA when requested."""
+        v = bioenc.get_vocab(3, 'acgtn', include_unk=True)
+        assert '<UNK>' in v
+        # NNN should also be in the vocab and have the same index
+        assert v['<UNK>'] == v['NNN']
+
+    def test_get_vocab_unk_entry_aa(self):
+        """Test <UNK> matches the all-X k-mer for AA when requested."""
+        v = bioenc.get_vocab(2, 'aa', include_unk=True)
+        assert v['<UNK>'] == v['XX']
+
+    def test_get_vocab_length(self):
+        """Test dict length equals (base-1)^k + 1 for <PAD>."""
+        for alph, base in [('acgtn', 6), ('iupac', 16), ('aa', 29)]:
+            for k in [1, 2]:
+                v = bioenc.get_vocab(k, alph)
+                num_chars = base - 1  # codes 1..base-1
+                expected_kmers = num_chars ** k
+                # +1 for <PAD>
+                assert len(v) == expected_kmers + 1, (
+                    f"alphabet={alph}, k={k}: expected {expected_kmers + 1}, "
+                    f"got {len(v)}"
+                )
+
+    def test_get_vocab_length_with_unk(self):
+        """Test dict length includes <UNK> when requested."""
+        for alph, base in [('acgtn', 6), ('iupac', 16), ('aa', 29)]:
+            for k in [1, 2]:
+                v = bioenc.get_vocab(k, alph, include_unk=True)
+                num_chars = base - 1
+                expected_kmers = num_chars ** k
+                # +2 for <PAD> and <UNK>
+                assert len(v) == expected_kmers + 2, (
+                    f"alphabet={alph}, k={k}: expected {expected_kmers + 2}, "
+                    f"got {len(v)}"
+                )
+
+    def test_get_vocab_matches_tokenize_dna(self):
+        """Every index from get_vocab matches tokenize_dna output."""
+        v = bioenc.get_vocab(2, 'acgtn')
+        for kmer, idx in v.items():
+            if kmer.startswith('<'):
+                continue
+            seq = np.frombuffer(kmer.encode('ascii'), dtype=np.uint8)
+            tokens = bioenc.tokenize_dna(seq, k=2, stride=1)
+            assert tokens[0] == idx, f"Mismatch for {kmer}: vocab={idx}, tokenize={tokens[0]}"
+
+    def test_get_vocab_matches_tokenize_dna_iupac(self):
+        """Every index from get_vocab matches tokenize_dna(alphabet='iupac')."""
+        v = bioenc.get_vocab(2, 'iupac')
+        for kmer, idx in v.items():
+            if kmer.startswith('<'):
+                continue
+            seq = np.frombuffer(kmer.encode('ascii'), dtype=np.uint8)
+            tokens = bioenc.tokenize_dna(seq, k=2, stride=1, alphabet='iupac')
+            assert tokens[0] == idx, f"Mismatch for {kmer}: vocab={idx}, tokenize={tokens[0]}"
+
+    def test_get_vocab_matches_tokenize_aa(self):
+        """Every index from get_vocab matches tokenize_aa output."""
+        v = bioenc.get_vocab(2, 'aa')
+        for kmer, idx in v.items():
+            if kmer.startswith('<'):
+                continue
+            seq = np.frombuffer(kmer.encode('ascii'), dtype=np.uint8)
+            tokens = bioenc.tokenize_aa(seq, k=2, stride=1)
+            assert tokens[0] == idx, f"Mismatch for {kmer}: vocab={idx}, tokenize={tokens[0]}"
+
+    def test_get_vocab_too_large(self):
+        """Test ValueError for k too large."""
+        with pytest.raises(ValueError, match="Vocabulary too large"):
+            bioenc.get_vocab(k=20, alphabet='acgtn')
+
+    def test_get_vocab_invalid_alphabet(self):
+        """Test ValueError for invalid alphabet."""
+        with pytest.raises(ValueError, match="Unknown alphabet"):
+            bioenc.get_vocab(k=3, alphabet='bogus')
+
+    def test_get_vocab_case_insensitive(self):
+        """Test that alphabet parameter is case-insensitive."""
+        v1 = bioenc.get_vocab(2, 'ACGTN')
+        v2 = bioenc.get_vocab(2, 'acgtn')
+        assert v1 == v2
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

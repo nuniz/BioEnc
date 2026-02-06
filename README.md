@@ -31,7 +31,7 @@ import bioenc
 # Tokenize DNA sequence (stride=3 default for codons)
 seq = np.frombuffer(b"ATGCGTAAATGA", dtype=np.uint8)
 tokens = bioenc.tokenize_dna(seq, k=3)
-# Returns: [48, 97, 0, 52] - 4 non-overlapping codons
+# Returns: [106, 137, 86, 206] - 4 non-overlapping codons
 
 # For overlapping k-mers, set stride=1 explicitly
 tokens = bioenc.tokenize_dna(seq, k=3, stride=1)
@@ -142,7 +142,7 @@ Tokenize DNA sequence into k-mer indices.
 - `k` (int): K-mer size
 - `stride` (int): Step between k-mers (default: 3 for codons)
 - `reading_frame` (int | None): Extract frame 0, 1, or 2 (crops sequence before tokenization)
-- `alphabet` (str): "acgtn" (base-5) or "iupac" (base-15)
+- `alphabet` (str): "acgtn" (base-6) or "iupac" (base-16)
 - `strand` (str): "forward", "revcomp", or "canonical"
 
 **Returns:** ndarray[int64] - K-mer token indices
@@ -167,7 +167,7 @@ Compute reverse complement.
 
 ### Batch Functions
 
-#### `batch_tokenize_dna_shared(buffer, lengths, k, stride=3, reading_frame=None, enable_padding=False, max_len=None, pad_value=-1, alphabet="acgtn", strand="forward")`
+#### `batch_tokenize_dna_shared(buffer, lengths, k, stride=3, reading_frame=None, enable_padding=False, max_len=None, pad_value=0, alphabet="acgtn", strand="forward")`
 
 Batch tokenize DNA sequences. Uses OpenMP parallelization.
 
@@ -191,7 +191,7 @@ Batch tokenize both forward and reverse complement.
 
 Batch tokenize amino acid sequences (stride defaults to 1).
 
-#### `batch_tokenize_dna_all_frames(buffer, lengths, k=3, stride=3, alphabet="acgtn", enable_padding=False, max_len=None, pad_value=-1)`
+#### `batch_tokenize_dna_all_frames(buffer, lengths, k=3, stride=3, alphabet="acgtn", enable_padding=False, max_len=None, pad_value=0)`
 
 Batch extract all 6 reading frames.
 
@@ -229,9 +229,30 @@ Require optional dependencies: `pip install bioenc[torch]` or `bioenc[tensorflow
 
 ### Utilities
 
+#### `vocab_size(k, alphabet="acgtn")`
+
+Return the vocabulary size (`base**k`) for sizing embedding tables.
+
+**Parameters:**
+- `k` (int): K-mer size
+- `alphabet` (str): "acgtn", "iupac", or "aa"
+
+**Returns:** int
+
+#### `get_vocab(k, alphabet="acgtn", include_unk=False)`
+
+Return a mapping from k-mer strings to token indices. Always includes `<PAD>: 0`. Pass `include_unk=True` to add an `<UNK>` entry that aliases the all-unknown k-mer (`'N'*k` for DNA, `'X'*k` for AA).
+
+**Parameters:**
+- `k` (int): K-mer size
+- `alphabet` (str): "acgtn", "iupac", or "aa"
+- `include_unk` (bool): Add `<UNK>` alias (default: False)
+
+**Returns:** dict[str, int]
+
 #### `hash_tokens(tokens, num_buckets)`
 
-Hash token indices to fixed vocabulary size.
+Hash token indices to fixed vocabulary size. Uses MurmurHash3 finalizer.
 
 **Parameters:**
 - `tokens` (ndarray): Any shape
@@ -241,29 +262,32 @@ Hash token indices to fixed vocabulary size.
 
 ## Alphabets
 
-### DNA ACGTN (base=5)
+All alphabets reserve code 0 for PAD and code 1 for UNK, with character codes starting at 2.
+
+### DNA ACGTN (base=6)
 
 | Character | Code | | Character | Code |
 |-----------|------|-|-----------|------|
-| A, a | 0 | | T, t, U, u | 3 |
-| C, c | 1 | | N, other | 4 |
-| G, g | 2 | | | |
+| PAD       | 0    | | G, g      | 4    |
+| UNK/N, other | 1 | | T, t, U, u | 5   |
+| A, a      | 2    | |           |      |
+| C, c      | 3    | |           |      |
 
-K-mer index: `sum(code[i] × 5^(k-1-i))` for i in 0..k-1
+K-mer index: `sum(code[i] × 6^(k-1-i))` for i in 0..k-1
 
-Vocabulary size: 5^k (e.g., 15,625 for k=6)
+Vocabulary size: 6^k (e.g., 46,656 for k=6)
 
-### DNA IUPAC (base=15)
+### DNA IUPAC (base=16)
 
-Extended alphabet with ambiguity codes: A, C, G, T, U, R, Y, S, W, K, M, B, D, H, V, N
+PAD=0, UNK/N=1, then A=2, C=3, G=4, T=5, R=6, Y=7, S=8, W=9, K=10, M=11, B=12, D=13, H=14, V=15
 
-Vocabulary size: 15^k
+Vocabulary size: 16^k
 
-### Amino Acids (base=28)
+### Amino Acids (base=29)
 
-Standard 20 amino acids plus B, Z, J, U, O, X (unknown), * (stop), - (gap)
+PAD=0, UNK/X=1, then 20 standard amino acids (A=2 through Y=21), plus B=22, Z=23, J=24, U=25, O=26, \*=27, -=28
 
-Vocabulary size: 28^k
+Vocabulary size: 29^k
 
 ## Examples
 
@@ -279,11 +303,17 @@ See `examples/` directory:
 ## Testing
 
 ```bash
-# Core tests (73 tests)
+# Core tests
 pytest tests/test_bioenc.py -v
 
-# ML integration tests
+# Input validation tests
+pytest tests/test_validation.py -v
+
+# ML integration tests (requires torch/tensorflow)
 pytest tests/test_ml_utils.py -v
+
+# Benchmarks
+pytest tests/test_benchmark.py -v -s
 
 # Run all examples
 python examples/05_reading_frames.py
