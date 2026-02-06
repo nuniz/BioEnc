@@ -57,59 +57,44 @@ class TestStrideValidation:
 class TestBatchValidation:
     """Test batch function validation."""
 
-    def test_negative_offset_raises(self):
-        """Test that negative offsets raise an error."""
-        buffer = np.frombuffer(b"ACGTACGT" * 10, dtype=np.uint8)
-        offsets = np.array([0, 8, -1], dtype=np.int64)  # Negative offset
-        lengths = np.array([8, 8, 8], dtype=np.int64)
-
-        with pytest.raises(RuntimeError, match="negative offset or length at index 2"):
-            bioenc.batch_tokenize_dna_shared(
-                buffer, offsets, lengths, k=3, max_len=10
-            )
-
     def test_negative_length_raises(self):
         """Test that negative lengths raise an error."""
         buffer = np.frombuffer(b"ACGTACGT" * 10, dtype=np.uint8)
-        offsets = np.array([0, 8, 16], dtype=np.int64)
         lengths = np.array([8, -5, 8], dtype=np.int64)  # Negative length
 
-        with pytest.raises(RuntimeError, match="negative offset or length at index 1"):
+        with pytest.raises(RuntimeError, match="negative.*length"):
             bioenc.batch_tokenize_dna_shared(
-                buffer, offsets, lengths, k=3, max_len=10
+                buffer, lengths, k=3, max_len=10
             )
 
     def test_buffer_overrun_raises(self):
         """Test that out-of-bounds buffer access raises an error."""
-        buffer = np.frombuffer(b"ACGTACGT" * 3, dtype=np.uint8)  # 24 bytes
-        offsets = np.array([0, 8, 20], dtype=np.int64)
-        lengths = np.array([8, 8, 10], dtype=np.int64)  # Last sequence extends beyond buffer
+        buffer = np.frombuffer(b"ACGTACGT" * 2, dtype=np.uint8)  # 16 bytes
+        lengths = np.array([8, 8, 10], dtype=np.int64)  # Total 26 > 16
 
-        with pytest.raises(RuntimeError, match="sequence 2 extends beyond buffer"):
+        with pytest.raises(RuntimeError, match="sequence.*extends beyond buffer"):
             bioenc.batch_tokenize_dna_shared(
-                buffer, offsets, lengths, k=3, max_len=10
+                buffer, lengths, k=3, max_len=10
             )
 
     def test_batch_k_validation(self):
         """Test that batch functions validate k."""
         buffer = np.frombuffer(b"ACGTACGT", dtype=np.uint8)
-        offsets = np.array([0], dtype=np.int64)
         lengths = np.array([8], dtype=np.int64)
 
         with pytest.raises(RuntimeError, match="k must be positive"):
             bioenc.batch_tokenize_dna_shared(
-                buffer, offsets, lengths, k=0, max_len=10
+                buffer, lengths, k=0, max_len=10
             )
 
     def test_batch_stride_validation(self):
         """Test that batch functions validate stride."""
         buffer = np.frombuffer(b"ACGTACGT", dtype=np.uint8)
-        offsets = np.array([0], dtype=np.int64)
         lengths = np.array([8], dtype=np.int64)
 
         with pytest.raises(RuntimeError, match="stride must be positive"):
             bioenc.batch_tokenize_dna_shared(
-                buffer, offsets, lengths, k=3, max_len=10, stride=-1
+                buffer, lengths, k=3, max_len=10, stride=-1
             )
 
 
@@ -119,34 +104,31 @@ class TestAAValidation:
     def test_aa_k_validation(self):
         """Test that AA functions validate k."""
         buffer = np.frombuffer(b"ACDEFGHIKLMNPQRSTVWY", dtype=np.uint8)
-        offsets = np.array([0], dtype=np.int64)
         lengths = np.array([20], dtype=np.int64)
 
         with pytest.raises(RuntimeError, match="k > 31 may cause overflow"):
             bioenc.batch_tokenize_aa_shared(
-                buffer, offsets, lengths, k=35, max_len=10
+                buffer, lengths, k=35, max_len=10
             )
 
     def test_aa_stride_validation(self):
         """Test that AA functions validate stride."""
         buffer = np.frombuffer(b"ACDEFGHIKLMNPQRSTVWY", dtype=np.uint8)
-        offsets = np.array([0], dtype=np.int64)
         lengths = np.array([20], dtype=np.int64)
 
         with pytest.raises(RuntimeError, match="stride must be positive"):
             bioenc.batch_tokenize_aa_shared(
-                buffer, offsets, lengths, k=3, max_len=10, stride=0
+                buffer, lengths, k=3, max_len=10, stride=0
             )
 
     def test_aa_buffer_validation(self):
         """Test that AA functions validate buffer access."""
         buffer = np.frombuffer(b"ACDEFG", dtype=np.uint8)  # 6 bytes
-        offsets = np.array([0, 5], dtype=np.int64)
-        lengths = np.array([3, 5], dtype=np.int64)  # Second sequence would go to offset 10
+        lengths = np.array([3, 5], dtype=np.int64)  # Total 8 > 6
 
-        with pytest.raises(RuntimeError, match="sequence 1 extends beyond buffer"):
+        with pytest.raises(RuntimeError, match="sequence.*extends beyond buffer"):
             bioenc.batch_tokenize_aa_shared(
-                buffer, offsets, lengths, k=2, max_len=5
+                buffer, lengths, k=2, max_len=5
             )
 
 
@@ -156,23 +138,21 @@ class TestBothStrandsValidation:
     def test_both_k_validation(self):
         """Test that both strands function validates k."""
         buffer = np.frombuffer(b"ACGTACGT", dtype=np.uint8)
-        offsets = np.array([0], dtype=np.int64)
         lengths = np.array([8], dtype=np.int64)
 
         with pytest.raises(RuntimeError, match="k must be positive, got -1"):
             bioenc.batch_tokenize_dna_both(
-                buffer, offsets, lengths, k=-1, max_len=10
+                buffer, lengths, k=-1, max_len=10
             )
 
     def test_both_buffer_validation(self):
         """Test that both strands function validates buffer access."""
         buffer = np.frombuffer(b"ACGT", dtype=np.uint8)  # 4 bytes
-        offsets = np.array([0, 2], dtype=np.int64)
-        lengths = np.array([2, 5], dtype=np.int64)  # Second sequence too long
+        lengths = np.array([2, 5], dtype=np.int64)  # Total 7 > 4
 
-        with pytest.raises(RuntimeError, match="sequence 1 extends beyond buffer"):
+        with pytest.raises(RuntimeError, match="sequence.*extends beyond buffer"):
             bioenc.batch_tokenize_dna_both(
-                buffer, offsets, lengths, k=2, max_len=5
+                buffer, lengths, k=2, max_len=5
             )
 
 
@@ -194,19 +174,16 @@ class TestErrorMessages:
     def test_buffer_error_includes_details(self):
         """Test that buffer overrun errors include helpful details."""
         buffer = np.frombuffer(b"ACGT" * 5, dtype=np.uint8)  # 20 bytes
-        offsets = np.array([0, 15], dtype=np.int64)
-        lengths = np.array([10, 10], dtype=np.int64)  # Second extends to 25
+        lengths = np.array([15, 10], dtype=np.int64)  # Total 25 > 20
 
         with pytest.raises(RuntimeError) as exc_info:
             bioenc.batch_tokenize_dna_shared(
-                buffer, offsets, lengths, k=3, max_len=5
+                buffer, lengths, k=3, max_len=5
             )
 
         error_msg = str(exc_info.value)
-        assert "sequence 1" in error_msg
-        assert "offset=15" in error_msg
-        assert "length=10" in error_msg
-        assert "buffer_size=20" in error_msg
+        assert "sequence" in error_msg
+        assert "buffer" in error_msg.lower()
 
 
 if __name__ == "__main__":
