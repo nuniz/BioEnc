@@ -585,8 +585,20 @@ class TestBatchTokenizeDnaBoth:
         )
         # Forward: AC=15, CG=22, GT=29
         np.testing.assert_array_equal(fwd[0, :3], [15, 22, 29])
-        # Revcomp: GT=29, CG=22, AC=15
-        np.testing.assert_array_equal(rev[0, :3], [29, 22, 15])
+        # Revcomp order: AC=15, CG=22, GT=29
+        np.testing.assert_array_equal(rev[0, :3], [15, 22, 29])
+
+    def test_both_revcomp_order(self):
+        """Test reverse-complement ordering matches reverse-complement sequence."""
+        buf, lens = self._make_batch([b"ACGTA"])
+        fwd, rev = bioenc.batch_tokenize_dna_both(
+            buf, lens, k=2, stride=1,
+            enable_padding=True, max_len=4
+        )
+        # Forward: AC=15, CG=22, GT=29, TA=32
+        np.testing.assert_array_equal(fwd[0, :4], [15, 22, 29, 32])
+        # Revcomp order for reverse complement "TACGT": TA=32, AC=15, CG=22, GT=29
+        np.testing.assert_array_equal(rev[0, :4], [32, 15, 22, 29])
 
 
 class TestBatchTokenizeAaShared:

@@ -484,31 +484,34 @@ inline void batch_tokenize_dna_both_strands(
         size_t len = static_cast<size_t>(lengths[seq_idx]);
         const uint8_t* seq = buffer + offset;
 
-        if (len < static_cast<size_t>(k)) {
-            // Sequence too short, fill entire rows with padding
+        size_t start = start_indices ? static_cast<size_t>(start_indices[seq_idx]) : 0;
+        size_t available = (len > start) ? (len - start) : 0;
+        size_t num_tokens = (available >= static_cast<size_t>(k)) ? ((available - k) / stride + 1) : 0;
+        size_t num_tokens_out = std::min(num_tokens, max_len);
+
+        if (num_tokens_out == 0) {
+            // Sequence too short (or start beyond end), fill entire rows with padding
             std::fill(row_fwd, row_fwd + max_len, pad_value);
             std::fill(row_rev, row_rev + max_len, pad_value);
             continue;
         }
-
-        size_t start = start_indices ? static_cast<size_t>(start_indices[seq_idx]) : 0;
 
         size_t out_idx = 0;
 
         // Optimized path for stride=1 using rolling window
         if (stride == 1) {
             RollingDnaCanon<decltype(table), decltype(comp)> roller(table, comp, base, k);
-            for (size_t i = start; i < len && out_idx < max_len; i++) {
+            for (size_t i = start; i < len && out_idx < num_tokens_out; i++) {
                 roller.push(seq[i]);
                 if (roller.ready()) {
                     row_fwd[out_idx] = roller.forward();
-                    row_rev[out_idx] = roller.revcomp();
+                    row_rev[num_tokens_out - 1 - out_idx] = roller.revcomp();
                     out_idx++;
                 }
             }
         } else {
             // Naive loop for stride > 1
-            for (size_t i = start; i + k <= len && out_idx < max_len; i += stride) {
+            for (size_t i = start; i + k <= len && out_idx < num_tokens_out; i += stride) {
                 uint64_t fwd = 0, rev = 0;
                 for (int j = 0; j < k; j++) {
                     uint8_t code = table[seq[i + j]];
@@ -517,15 +520,15 @@ inline void batch_tokenize_dna_both_strands(
                     rev = rev + comp_code * power_cache[j];
                 }
                 row_fwd[out_idx] = static_cast<int64_t>(fwd);
-                row_rev[out_idx] = static_cast<int64_t>(rev);
+                row_rev[num_tokens_out - 1 - out_idx] = static_cast<int64_t>(rev);
                 out_idx++;
             }
         }
 
         // Fill remaining slots with padding
-        if (out_idx < max_len) {
-            std::fill(row_fwd + out_idx, row_fwd + max_len, pad_value);
-            std::fill(row_rev + out_idx, row_rev + max_len, pad_value);
+        if (num_tokens_out < max_len) {
+            std::fill(row_fwd + num_tokens_out, row_fwd + max_len, pad_value);
+            std::fill(row_rev + num_tokens_out, row_rev + max_len, pad_value);
         }
     }
 }
@@ -721,6 +724,9 @@ batch_tokenize_dna_both_variable(
                 rev_tokens.push_back(static_cast<int64_t>(rev));
             }
         }
+
+        // Reverse to return tokens in reverse-complement order
+        std::reverse(rev_tokens.begin(), rev_tokens.end());
     }
 
     return std::make_pair(results_fwd, results_rev);

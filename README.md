@@ -183,7 +183,7 @@ Batch tokenize DNA sequences. Uses OpenMP parallelization.
 
 #### `batch_tokenize_dna_both(buffer, lengths, k, stride=3, ...)`
 
-Batch tokenize both forward and reverse complement.
+Batch tokenize both forward and reverse complement (reverse complement tokens are returned in reverse-complement order).
 
 **Returns:** Tuple of (forward, revcomp) - lists or 2D arrays depending on `enable_padding`
 
