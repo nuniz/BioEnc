@@ -135,7 +135,7 @@ Performance scales with CPU cores via OpenMP parallelization.
 
 #### `tokenize_dna(seq, k, stride=3, reading_frame=None, alphabet="acgtn", strand="forward")`
 
-Tokenize DNA sequence into k-mer indices.
+Tokenize DNA sequence into k-mer indices. For `strand="revcomp"`, tokens are returned in reverse-complement order.
 
 **Parameters:**
 - `seq` (ndarray[uint8]): DNA sequence as ASCII bytes

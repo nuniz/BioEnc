@@ -299,7 +299,7 @@ inline void tokenize_dna_seq(const uint8_t* seq, size_t len,
 
     if (strand == StrandMode::FORWARD) {
         // Forward only - straightforward tokenization
-        for (size_t i = 0; i + k <= len && out_idx < out_len; i += stride) {
+        for (size_t i = 0; i + k <= len && out_idx < num_tokens_out; i += stride) {
             uint64_t v = 0;
             for (int j = 0; j < k; j++) {
                 v = v * base + table[seq[i + j]];
@@ -310,6 +310,10 @@ inline void tokenize_dna_seq(const uint8_t* seq, size_t len,
         // Need canonical/revcomp tracking
         PowerCache<32> power_cache(base);
         uint64_t high_pow = power_cache[k - 1];
+
+        size_t num_tokens = (len >= static_cast<size_t>(k)) ? ((len - k) / stride + 1) : 0;
+        size_t num_tokens_out = std::min(num_tokens, out_len);
+        if (num_tokens_out == 0) return;
 
         for (size_t i = 0; i + k <= len && out_idx < out_len; i += stride) {
             uint64_t fwd = 0, rev = 0;
@@ -325,7 +329,8 @@ inline void tokenize_dna_seq(const uint8_t* seq, size_t len,
                     out[out_idx++] = static_cast<int64_t>(fwd);
                     break;
                 case StrandMode::REVCOMP:
-                    out[out_idx++] = static_cast<int64_t>(rev);
+                    out[num_tokens_out - 1 - out_idx] = static_cast<int64_t>(rev);
+                    out_idx++;
                     break;
                 case StrandMode::CANONICAL:
                     out[out_idx++] = static_cast<int64_t>(std::min(fwd, rev));
@@ -391,25 +396,29 @@ inline void batch_tokenize_dna(
         size_t len = static_cast<size_t>(lengths[seq_idx]);
         const uint8_t* seq = buffer + offset;
 
-        if (len < static_cast<size_t>(k)) {
-            // Sequence too short, fill entire row with padding
+        size_t start = start_indices ? static_cast<size_t>(start_indices[seq_idx]) : 0;
+        size_t available = (len > start) ? (len - start) : 0;
+        size_t num_tokens = (available >= static_cast<size_t>(k)) ? ((available - k) / stride + 1) : 0;
+        size_t num_tokens_out = std::min(num_tokens, max_len);
+
+        if (num_tokens_out == 0) {
+            // Sequence too short (or start beyond end), fill entire row with padding
             std::fill(row, row + max_len, pad_value);
             continue;
         }
-
-        size_t start = start_indices ? static_cast<size_t>(start_indices[seq_idx]) : 0;
 
         size_t out_idx = 0;
 
         // Optimized path for stride=1 with canonical/revcomp using rolling window
         if (stride == 1 && strand != StrandMode::FORWARD) {
             RollingDnaCanon<decltype(table), decltype(comp)> roller(table, comp, base, k);
-            for (size_t i = start; i < len && out_idx < max_len; i++) {
+            for (size_t i = start; i < len && out_idx < num_tokens_out; i++) {
                 roller.push(seq[i]);
                 if (roller.ready()) {
                     switch (strand) {
                         case StrandMode::REVCOMP:
-                            row[out_idx++] = roller.revcomp();
+                            row[num_tokens_out - 1 - out_idx] = roller.revcomp();
+                            out_idx++;
                             break;
                         case StrandMode::CANONICAL:
                             row[out_idx++] = roller.canonical();
@@ -421,7 +430,7 @@ inline void batch_tokenize_dna(
             }
         } else {
             // Naive loop for stride > 1 or forward-only
-            for (size_t i = start; i + k <= len && out_idx < max_len; i += stride) {
+            for (size_t i = start; i + k <= len && out_idx < num_tokens_out; i += stride) {
                 uint64_t fwd = 0, rev = 0;
                 for (int j = 0; j < k; j++) {
                     uint8_t code = table[seq[i + j]];
@@ -437,7 +446,8 @@ inline void batch_tokenize_dna(
                         row[out_idx++] = static_cast<int64_t>(fwd);
                         break;
                     case StrandMode::REVCOMP:
-                        row[out_idx++] = static_cast<int64_t>(rev);
+                        row[num_tokens_out - 1 - out_idx] = static_cast<int64_t>(rev);
+                        out_idx++;
                         break;
                     case StrandMode::CANONICAL:
                         row[out_idx++] = static_cast<int64_t>(std::min(fwd, rev));
@@ -450,8 +460,8 @@ inline void batch_tokenize_dna(
         }
 
         // Fill remaining slots with padding
-        if (out_idx < max_len) {
-            std::fill(row + out_idx, row + max_len, pad_value);
+        if (num_tokens_out < max_len) {
+            std::fill(row + num_tokens_out, row + max_len, pad_value);
         }
     }
 }

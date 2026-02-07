@@ -49,11 +49,18 @@ class TestTokenizeDna:
         """Test reverse complement strand tokenization."""
         seq = np.frombuffer(b"ACGT", dtype=np.uint8)
         tokens = bioenc.tokenize_dna(seq, k=2, stride=1, strand="revcomp")
-        # RC of AC is GT, RC of CG is CG, RC of GT is AC
-        # GT = 4*6 + 5 = 29
-        # CG = 3*6 + 4 = 22
-        # AC = 2*6 + 3 = 15
-        expected = np.array([29, 22, 15], dtype=np.int64)
+        # Reverse complement of ACGT is ACGT
+        # AC = 15, CG = 22, GT = 29
+        expected = np.array([15, 22, 29], dtype=np.int64)
+        np.testing.assert_array_equal(tokens, expected)
+
+    def test_revcomp_strand_order(self):
+        """Test reverse-complement ordering on a non-palindromic sequence."""
+        seq = np.frombuffer(b"ACGTA", dtype=np.uint8)
+        tokens = bioenc.tokenize_dna(seq, k=2, stride=1, strand="revcomp")
+        # Reverse complement of ACGTA is TACGT
+        # TA = 32, AC = 15, CG = 22, GT = 29
+        expected = np.array([32, 15, 22, 29], dtype=np.int64)
         np.testing.assert_array_equal(tokens, expected)
 
     def test_canonical_strand(self):

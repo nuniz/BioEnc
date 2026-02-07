@@ -257,7 +257,8 @@ py::array_t<int64_t> tokenize_dna(
                 out[out_idx++] = static_cast<int64_t>(fwd);
                 break;
             case StrandMode::REVCOMP:
-                out[out_idx++] = static_cast<int64_t>(rev);
+                out[num_tokens - 1 - out_idx] = static_cast<int64_t>(rev);
+                out_idx++;
                 break;
             case StrandMode::CANONICAL:
                 out[out_idx++] = static_cast<int64_t>(std::min(fwd, rev));
