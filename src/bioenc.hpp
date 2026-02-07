@@ -291,7 +291,9 @@ inline void tokenize_dna_seq(const uint8_t* seq, size_t len,
     const auto& comp = use_iupac ? COMP_IUPAC : COMP_ACGTN;
     uint64_t base = use_iupac ? 16 : 6;
 
-    if (len < static_cast<size_t>(k)) {
+    size_t num_tokens = (len >= static_cast<size_t>(k)) ? ((len - k) / stride + 1) : 0;
+    size_t num_tokens_out = std::min(num_tokens, out_len);
+    if (num_tokens_out == 0) {
         return;
     }
 
@@ -310,12 +312,7 @@ inline void tokenize_dna_seq(const uint8_t* seq, size_t len,
         // Need canonical/revcomp tracking
         PowerCache<32> power_cache(base);
         uint64_t high_pow = power_cache[k - 1];
-
-        size_t num_tokens = (len >= static_cast<size_t>(k)) ? ((len - k) / stride + 1) : 0;
-        size_t num_tokens_out = std::min(num_tokens, out_len);
-        if (num_tokens_out == 0) return;
-
-        for (size_t i = 0; i + k <= len && out_idx < out_len; i += stride) {
+        for (size_t i = 0; i + k <= len && out_idx < num_tokens_out; i += stride) {
             uint64_t fwd = 0, rev = 0;
             for (int j = 0; j < k; j++) {
                 uint8_t code = table[seq[i + j]];
